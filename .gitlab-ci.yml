@@ -8,6 +8,7 @@ variables:
     NO_PROXY: docker,$LOCAL_REGISTRY
     no_proxy: docker,$LOCAL_REGISTRY
     https_proxy: $http_proxy
+    OS_CLOUD: default
 
 test:
     stage: test
@@ -20,4 +21,7 @@ test:
     -   pip install .
     -   flake8 openstack_events tests
     -   mypy --strict openstack_events
-    -   python -m pytest --log-level debug tests/
+    -   mkdir -p /root/.config/openstack
+    -   echo "$clouds_yaml_ci_infra" > /root/.config/openstack/clouds.yaml
+    -   env
+    -   python -m pytest --log-cli-level debug tests/

@@ -1,9 +1,11 @@
 from time import sleep
+import pytest
 import logging
 
 log = logging.getLogger(__name__)
 
 
+@pytest.mark.timeout(30)
 def test_event_manager_flow(event_manager_builder, mocker):
     on_port_set = mocker.stub(name='on_port_set')
     on_port_del = mocker.stub(name='on_port_del')
