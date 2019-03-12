@@ -17,6 +17,7 @@ test:
     -   cat /etc/apt/apt.conf.d/99proxy
     -   apt-get update && apt-get install -y gcc
     -   pip install -r requirements-test.txt
+    -   pip install .
     -   flake8 openstack_events tests
     -   mypy --strict openstack_events
     -   python -m pytest --log-level debug tests/

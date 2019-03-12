@@ -3,3 +3,4 @@ docker
 pytest_timeout
 pytest-cov
 pytest-mock
+mypy
