@@ -1,0 +1,2 @@
+openstacksdk==0.17.2
+kombu==4.4.0
