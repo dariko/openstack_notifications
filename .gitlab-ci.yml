@@ -1,0 +1,22 @@
+stages:
+-   test
+
+variables:
+    DOCKER_PUBLISH_HOST: docker
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_DRIVER: overlay2
+    NO_PROXY: docker,$LOCAL_REGISTRY
+    no_proxy: docker,$LOCAL_REGISTRY
+    https_proxy: $http_proxy
+
+test:
+    stage: test
+    image: python:3.7-slim
+    script:
+    -   echo 'Acquire::http::Proxy "'$http_proxy'";' > /etc/apt/apt.conf.d/99proxy
+    -   cat /etc/apt/apt.conf.d/99proxy
+    -   apt-get update && apt-get install -y gcc
+    -   pip install -r requirements-test.txt
+    -   flake8 openstack_events tests
+    -   mypy --strict openstack_events
+    -   python -m pytest --log-level debug tests/

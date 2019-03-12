@@ -1,0 +1,111 @@
+from .stoppable_thread import StoppableThread
+from typing import Optional, Dict, Any, Callable, Set
+import time
+import openstack  # type: ignore
+import logging
+import kombu  # type: ignore
+import socket
+
+log = logging.getLogger(__name__)
+
+
+OpenstackManagerCallback = Optional[Callable[[Set[str]], None]]
+
+
+class EventManager(StoppableThread):
+    def __init__(self,
+                 rabbit_url: str,
+                 openstack_options: Optional[Dict[str, Any]] = None,
+                 on_port_set: OpenstackManagerCallback = None,
+                 on_port_del: OpenstackManagerCallback = None,
+                 on_network_set: OpenstackManagerCallback = None,
+                 on_network_del: OpenstackManagerCallback = None,
+                 min_timestamp: Optional[float] = None,
+                 ):
+        self.rabbit_url: str = rabbit_url
+        self.on_port_set = on_port_set
+        self.on_port_del = on_port_del
+        self.on_network_set = on_network_set
+        self.on_network_del = on_network_del
+        if openstack_options is not None:
+            self.openstack_options = openstack_options
+        else:
+            self.openstack_options = {}
+        if min_timestamp is None:
+            self.min_timestamp = time.mktime(time.gmtime())
+        else:
+            self.min_timestamp = min_timestamp
+        super().__init__()
+
+        self.openstack = openstack.connect(**self.openstack_options)
+        self.rabbitmq = kombu.Connection(
+            self.rabbit_url, failover_strategy='round-robin',
+            hearthbeat=1)
+
+    def rabbitmq_callback(self, body: Dict[str, Any], message: str) -> None:
+        try:
+            event_type = body.get('event_type', None)
+            event_ts_s = body.get('timestamp', None)
+            if event_type is None:
+                return
+            if event_ts_s is None:
+                log.debug('message has no timestamp, skipping: %s'
+                          % body)
+                return
+            event_ts = time.mktime(time.strptime(
+                event_ts_s, '%Y-%m-%d %H:%M:%S.%f'))
+            if self.min_timestamp > event_ts:
+                log.debug('old message, skipping: %s'
+                          % body)
+                return
+            if event_type == 'port.delete.end':
+                port_id = body['payload']['port_id']
+                if self.on_port_del is not None:
+                    self.on_port_del({port_id})
+            elif event_type == 'port.create.end' or \
+                    event_type == 'port.update.end':
+                port_id = body['payload']['port']['id']
+                if self.on_port_set is not None:
+                    self.on_port_set({port_id})
+            elif event_type == 'network.delete.end':
+                network_id = body['payload']['network_id']
+                if self.on_network_del is not None:
+                    self.on_network_del({network_id})
+            elif event_type == 'network.create.end' or \
+                    event_type == 'network.update.end':
+                network_id = body['payload']['network']['id']
+                if self.on_network_set is not None:
+                    self.on_network_set({network_id})
+            elif event_type is not None:
+                log.debug('skipping message event_type: %s, body: %s' %
+                          (event_type, body))
+            else:
+                log.debug('unknown event: %s' % body)
+        except Exception:
+            log.exception('Error while parsing message %s' % body)
+
+    def run(self) -> None:
+        try:
+            neutron_ex = kombu.Exchange('neutron', type='topic', durable=False)
+            neutron_q = kombu.Queue('notifications.neutron',
+                                    exchange=neutron_ex, durable=False,
+                                    routing_key='*')
+            self.minimum_timestamp = time.mktime(time.gmtime())
+            with self.rabbitmq.Consumer(
+                    neutron_q, callbacks=[self.rabbitmq_callback]) as consumer:
+                while not self.quit_event.is_set():
+                    while not self.quit_event.wait(timeout=1):
+                        try:
+                            while not self.quit_event.is_set():
+                                self.rabbitmq.drain_events(timeout=1)
+                        except socket.timeout:
+                            self.rabbitmq.heartbeat_check()
+
+        except Exception as e:
+            log.exception('error in OpenstackManager: %s' % e)
+        finally:
+            consumer.cancel()
+
+    def stop(self) -> None:
+        super().stop()
+        self.rabbitmq.release()
