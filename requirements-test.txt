@@ -4,3 +4,4 @@ pytest_timeout
 pytest-cov
 pytest-mock
 mypy
+openstacksdk==0.24.0

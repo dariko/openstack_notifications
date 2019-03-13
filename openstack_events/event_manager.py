@@ -1,7 +1,6 @@
 from .stoppable_thread import StoppableThread
 from typing import Optional, Dict, Any, Callable, Set
 import time
-import openstack  # type: ignore
 import logging
 import kombu  # type: ignore
 import socket
@@ -14,32 +13,28 @@ OpenstackManagerCallback = Optional[Callable[[Set[str]], None]]
 
 class EventManager(StoppableThread):
     def __init__(self,
-                 rabbit_url: str,
-                 openstack_options: Optional[Dict[str, Any]] = None,
+                 url: str,
                  on_port_set: OpenstackManagerCallback = None,
                  on_port_del: OpenstackManagerCallback = None,
                  on_network_set: OpenstackManagerCallback = None,
                  on_network_del: OpenstackManagerCallback = None,
+                 neutron_exchange: str = "neutron",
+                 neutron_topic: str = "notifications.info",
                  min_timestamp: Optional[float] = None,
                  ):
-        self.rabbit_url: str = rabbit_url
+        self.url: str = url
         self.on_port_set = on_port_set
         self.on_port_del = on_port_del
         self.on_network_set = on_network_set
         self.on_network_del = on_network_del
-        if openstack_options is not None:
-            self.openstack_options = openstack_options
-        else:
-            self.openstack_options = {}
         if min_timestamp is None:
             self.min_timestamp = time.mktime(time.gmtime())
         else:
             self.min_timestamp = min_timestamp
         super().__init__()
 
-        self.openstack = openstack.connect(**self.openstack_options)
         self.rabbitmq = kombu.Connection(
-            self.rabbit_url, failover_strategy='round-robin',
+            self.url, failover_strategy='round-robin',
             hearthbeat=1)
 
     def rabbitmq_callback(self, body: Dict[str, Any], message: str) -> None:
@@ -59,7 +54,7 @@ class EventManager(StoppableThread):
                           % body)
                 return
             if event_type == 'port.delete.end':
-                port_id = body['payload']['port_id']
+                port_id = body['payload']['port']['id']
                 if self.on_port_del is not None:
                     self.on_port_del({port_id})
             elif event_type == 'port.create.end' or \
@@ -68,7 +63,7 @@ class EventManager(StoppableThread):
                 if self.on_port_set is not None:
                     self.on_port_set({port_id})
             elif event_type == 'network.delete.end':
-                network_id = body['payload']['network_id']
+                network_id = body['payload']['network']['id']
                 if self.on_network_del is not None:
                     self.on_network_del({network_id})
             elif event_type == 'network.create.end' or \
@@ -88,8 +83,9 @@ class EventManager(StoppableThread):
         try:
             neutron_ex = kombu.Exchange('neutron', type='topic', durable=False)
             neutron_q = kombu.Queue('notifications.neutron',
-                                    exchange=neutron_ex, durable=False,
-                                    routing_key='*')
+                                    exchange=neutron_ex,
+                                    routing_key='*',
+                                    durable=False)
             self.minimum_timestamp = time.mktime(time.gmtime())
             with self.rabbitmq.Consumer(
                     neutron_q, callbacks=[self.rabbitmq_callback]) as consumer:
