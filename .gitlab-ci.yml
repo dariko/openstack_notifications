@@ -1,6 +1,3 @@
-
-
-
 stages:
 -   test
 
@@ -32,4 +29,4 @@ test:
     -   mypy --strict openstack_events
     #-   mkdir -p /root/.config/openstack
     #-   echo "$clouds_yaml_ci_infra" > /root/.config/openstack/clouds.yaml
-    -   python -m pytest --log-cli-level debug tests/
+    -   python -m pytest --log-level debug --cov openstack_events tests/
