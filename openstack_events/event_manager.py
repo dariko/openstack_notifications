@@ -109,3 +109,4 @@ class EventManager(StoppableThread):
 
     def stop(self) -> None:
         super().stop()
+        self.join()

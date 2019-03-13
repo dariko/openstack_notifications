@@ -14,6 +14,7 @@ def pytest_addoption(parser):
     parser.addoption("--rabbitmq_url", default=None)
     parser.addoption("--os_cloud", default=None)
 
+
 def pytest_collection_modifyitems(config, items):
     if config.getoption("--os_cloud") \
             and config.getoption("--rabbitmq_url"):
