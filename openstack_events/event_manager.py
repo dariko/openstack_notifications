@@ -105,8 +105,7 @@ class EventManager(StoppableThread):
         except Exception as e:
             log.exception('error in OpenstackManager: %s' % e)
         finally:
-            consumer.cancel()
+            self.rabbitmq.release()
 
     def stop(self) -> None:
         super().stop()
-        self.rabbitmq.release()
