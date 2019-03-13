@@ -35,7 +35,9 @@ class EventManager(StoppableThread):
 
         self.rabbitmq = kombu.Connection(
             self.url, failover_strategy='round-robin',
+            connect_timeout=2,
             hearthbeat=1)
+        self.rabbitmq.ensure_connection(max_retries=3)
 
     def rabbitmq_callback(self, body: Dict[str, Any], message: str) -> None:
         try:
