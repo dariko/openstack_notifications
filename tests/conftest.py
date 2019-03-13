@@ -14,6 +14,17 @@ def pytest_addoption(parser):
     parser.addoption("--rabbitmq_url", default=None)
     parser.addoption("--os_cloud", default=None)
 
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--os_cloud") \
+            and config.getoption("--rabbitmq_url"):
+        # --runslow given in cli: do not skip slow tests
+        return
+    skip_live = pytest.mark.skip(
+        reason="need --os_cloud and --rabbitmq_url to run")
+    for item in items:
+        if "live" in item.keywords:
+            item.add_marker(skip_live)
+
 
 class RabbitMQContainer:
     def __init__(self, ident=''):
