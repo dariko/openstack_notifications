@@ -17,6 +17,7 @@ def pytest_addoption(parser):
 
 class RabbitMQContainer:
     def __init__(self, ident=''):
+        docker.from_env().images.pull('rabbitmq:3.7.10-alpine')
         self.container = docker.from_env().containers.create(
             image='rabbitmq:3.7.10-alpine',
             name='rabbitmq_test_%s' % ident)
