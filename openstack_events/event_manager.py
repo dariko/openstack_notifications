@@ -93,7 +93,7 @@ class EventManager(StoppableThread):
                                     durable=False)
             self.minimum_timestamp = time.mktime(time.gmtime())
             with self.rabbitmq.Consumer(
-                    neutron_q, callbacks=[self.rabbitmq_callback]) as consumer:
+                    neutron_q, callbacks=[self.rabbitmq_callback]):
                 while not self.quit_event.is_set():
                     while not self.quit_event.wait(timeout=1):
                         try:
