@@ -16,6 +16,8 @@ variables:
 test:
     stage: test
     image: python:3.7-slim
+    services:
+    -   name: docker:dind
     script:
     -   echo 'Acquire::http::Proxy "'$http_proxy'";' > /etc/apt/apt.conf.d/99proxy
     -   cat /etc/apt/apt.conf.d/99proxy
