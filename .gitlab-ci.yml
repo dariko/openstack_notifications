@@ -1,3 +1,6 @@
+
+
+
 stages:
 -   test
 
@@ -21,7 +24,6 @@ test:
     -   pip install .
     -   flake8 openstack_events tests
     -   mypy --strict openstack_events
-    -   mkdir -p /root/.config/openstack
-    -   echo "$clouds_yaml_ci_infra" > /root/.config/openstack/clouds.yaml
-    -   env
+    #-   mkdir -p /root/.config/openstack
+    #-   echo "$clouds_yaml_ci_infra" > /root/.config/openstack/clouds.yaml
     -   python -m pytest --log-cli-level debug tests/
