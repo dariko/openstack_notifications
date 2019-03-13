@@ -86,3 +86,5 @@ def test_generated_events(event_manager_builder, rabbitmq_container, mocker):
     sleep(1)
     on_port_del.assert_called_with({'0000000000'})
     on_port_del.reset_mock()
+
+    om.stop()
