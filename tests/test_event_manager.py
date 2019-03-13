@@ -43,7 +43,7 @@ def test_live_events(event_manager_builder, mocker,
     assert {port.id} in [x[0][0] for x in on_port_del.call_args_list]
 
 
-@pytest.mark.timeout(30)
+@pytest.mark.timeout(120)
 def test_generated_events(event_manager_builder, rabbitmq_container, mocker):
     on_port_set = mocker.stub(name='on_port_set')
     on_port_del = mocker.stub(name='on_port_del')
