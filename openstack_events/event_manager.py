@@ -81,6 +81,9 @@ class EventManager(StoppableThread):
 
     def run(self) -> None:
         try:
+            log.debug('start listening to exchange neutron,'
+                      'queue notifications.neutron, %s' %
+                      self.url)
             neutron_ex = kombu.Exchange('neutron', type='topic', durable=False)
             neutron_q = kombu.Queue('notifications.neutron',
                                     exchange=neutron_ex,
