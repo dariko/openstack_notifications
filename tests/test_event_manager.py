@@ -5,10 +5,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-@pytest.mark.skipif(
-    pytest.config.getoption("--os_cloud") is None
-    or pytest.config.getoption("--rabbitmq_url") is None,
-    reason="need --os-cloud and --rabbitmq_url options to run")
+@pytest.mark.live
 @pytest.mark.timeout(30)
 def test_live_events(event_manager_builder, mocker,
                      openstack_client, rabbitmq_url):
