@@ -1,4 +1,4 @@
-from openstack_events import EventManager
+from openstack_notifier import OpenstackNotifier
 import openstack
 import re
 import pytest
@@ -165,11 +165,11 @@ def rabbitmq_container(request):
 
 
 @pytest.fixture
-def event_manager_builder(request):
+def openstack_notifier_builder(request):
     managers = []
 
-    def _event_manager_builder(**kwargs):
-        em = EventManager(
+    def _openstack_notifier_builder(**kwargs):
+        em = OpenstackNotifier(
             **kwargs)
         managers.append(em)
         return em
@@ -179,4 +179,4 @@ def event_manager_builder(request):
             m.stop()
 
     request.addfinalizer(fin)
-    return _event_manager_builder
+    return _openstack_notifier_builder

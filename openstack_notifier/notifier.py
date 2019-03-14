@@ -19,7 +19,7 @@ class CallbackData:
 EventManagerCallback = Optional[Callable[[CallbackData], None]]
 
 
-class EventManager(StoppableThread):
+class OpenstackNotifier(StoppableThread):
     def __init__(self,
                  url: str,
                  callback: EventManagerCallback = None,

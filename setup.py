@@ -2,12 +2,12 @@
 
 from setuptools import setup
 
-setup(name='openstack_events',
+setup(name='openstack_notifier',
       version='0.1.0',
-      packages=['openstack_events'],
+      packages=['openstack_notifier'],
       install_requires=['kombu==4.4.0'],
       entry_points={
         'console_scripts': [
-            'openstack_events_monitor = openstack_events.tool:openstack_events_monitor',
+            'openstack_notifier = openstack_notifier.tool:openstack_notifier_tool',
         ]},
       )
