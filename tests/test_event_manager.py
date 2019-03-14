@@ -44,6 +44,11 @@ def test_live_events(event_manager_builder, mocker,
     openstack_client.delete_port(port)
     log.info('delete network')
     openstack_client.delete_network(network)
+    log.info('create security group')
+    sg = openstack_client.create_security_group(
+        name='test_openstack_events', description='test_openstack_events')
+    log.info('delete security group')
+    openstack_client.delete_security_group(sg)
 
     sleep(3)
     assert event_in_callbackdata(callbackdata, 'network.create.end',
@@ -54,6 +59,10 @@ def test_live_events(event_manager_builder, mocker,
                                  'port', id=port.id)
     assert event_in_callbackdata(callbackdata, 'port.delete.end',
                                  'port', id=port.id)
+    assert event_in_callbackdata(callbackdata, 'security_group.create.end',
+                                 'security_group', id=sg.id)
+    assert event_in_callbackdata(callbackdata, 'security_group.delete.end',
+                                 'security_group', id=sg.id)
 
 
 @pytest.mark.timeout(120)
@@ -123,6 +132,39 @@ def test_generated_events(event_manager_builder, rabbitmq_container, mocker):
     log.info(callback.call_args_list)
     callback.assert_called_with(
         CallbackData('port.delete.end', {'port': {'id': '0000000000'}}))
+    callback.reset_mock()
+
+    log.info('create security_group')
+    rabbitmq_container.security_group_create('0000000000')
+    while not callback.called:
+        log.info('waiting for callback')
+        sleep(0.5)
+    log.info(callback.call_args_list)
+    callback.assert_called_with(
+        CallbackData('security_group.create.end',
+                     {'security_group': {'id': '0000000000'}}))
+    callback.reset_mock()
+
+    log.info('update security_group')
+    rabbitmq_container.security_group_update('0000000000')
+    while not callback.called:
+        log.info('waiting for callback')
+        sleep(0.5)
+    log.info(callback.call_args_list)
+    callback.assert_called_with(
+        CallbackData('security_group.update.end',
+                     {'security_group': {'id': '0000000000'}}))
+    callback.reset_mock()
+
+    log.info('delete security_group')
+    rabbitmq_container.security_group_delete('0000000000')
+    while not callback.called:
+        log.info('waiting for callback')
+        sleep(0.5)
+    log.info(callback.call_args_list)
+    callback.assert_called_with(
+        CallbackData('security_group.delete.end',
+                     {'security_group': {'id': '0000000000'}}))
     callback.reset_mock()
 
     om.stop()

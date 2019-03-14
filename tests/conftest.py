@@ -115,6 +115,24 @@ class RabbitMQContainer:
              'payload': {'network': {'id': network_id}}},
             'neutron', 'notifications.neutron', 'notifications.neutron')
 
+    def security_group_create(self, security_group_id):
+        self.publish(
+            {'event_type': 'security_group.create.end',
+             'payload': {'security_group': {'id': security_group_id}}},
+            'nova', 'notifications.info', 'notifications.info')
+
+    def security_group_update(self, security_group_id):
+        self.publish(
+            {'event_type': 'security_group.update.end',
+             'payload': {'security_group': {'id': security_group_id}}},
+            'nova', 'notifications.info', 'notifications.info')
+
+    def security_group_delete(self, security_group_id):
+        self.publish(
+            {'event_type': 'security_group.delete.end',
+             'payload': {'security_group': {'id': security_group_id}}},
+            'nova', 'notifications.info', 'notifications.info')
+
 
 @pytest.fixture
 def rabbitmq_url(request):
