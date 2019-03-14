@@ -1,5 +1,5 @@
 from time import sleep
-from openstack_events.event_manager import CallbackData
+from openstack_notifier.notifier import CallbackData
 import pytest
 import logging
 
@@ -24,20 +24,20 @@ def event_in_callbackdata(callbackdata, event_type, payload_section, **kwargs):
 
 @pytest.mark.live
 @pytest.mark.timeout(30)
-def test_live_events(event_manager_builder, mocker,
-                     openstack_client, rabbitmq_url):
+def test_live_notifications(openstack_notifier_builder, mocker,
+                            openstack_client, rabbitmq_url):
     callbackdata = []
 
     def callback(data):
         callbackdata.append(data)
 
-    om = event_manager_builder(url=rabbitmq_url,
-                               callback=callback,
-                               )
+    om = openstack_notifier_builder(url=rabbitmq_url,
+                                    callback=callback)
     om.start()
     sleep(1)
     log.info('create network')
-    network = openstack_client.create_network(name='test_openstack_events')
+    network = openstack_client.create_network(
+        name='test_openstack_notifier')
     log.info('create port')
     port = openstack_client.create_port(network_id=network.id)
     log.info('delete port')
@@ -46,7 +46,8 @@ def test_live_events(event_manager_builder, mocker,
     openstack_client.delete_network(network)
     log.info('create security group')
     sg = openstack_client.create_security_group(
-        name='test_openstack_events', description='test_openstack_events')
+        name='test_openstack_notifier',
+        description='test_openstack_notifier')
     log.info('delete security group')
     openstack_client.delete_security_group(sg)
 
@@ -66,11 +67,12 @@ def test_live_events(event_manager_builder, mocker,
 
 
 @pytest.mark.timeout(120)
-def test_generated_events(event_manager_builder, rabbitmq_container, mocker):
+def test_generated_notifications(openstack_notifier_builder,
+                                 rabbitmq_container,
+                                 mocker):
     callback = mocker.stub(name='callback')
-    om = event_manager_builder(url=rabbitmq_container.url(),
-                               callback=callback,
-                               )
+    om = openstack_notifier_builder(url=rabbitmq_container.url(),
+                                    callback=callback)
     om.start()
     sleep(1)
 

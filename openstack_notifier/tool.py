@@ -1,13 +1,13 @@
 from argparse import ArgumentParser
-from .event_manager import EventManager
-from .event_manager import CallbackData
+from .notifier import OpenstackNotifier
+from .notifier import CallbackData
 import time
 import logging
 
 log = logging.getLogger(__name__)
 
 
-def openstack_events_monitor() -> None:
+def openstack_notifier_tool() -> None:
     parser = ArgumentParser()
     parser.description = 'openstack notifications monitor'
     parser.add_argument('--neutron_exchange', default='neutron')
@@ -30,22 +30,23 @@ def openstack_events_monitor() -> None:
     def callback(data: CallbackData) -> None:
         log.info('%s' % data)
 
-    m = EventManager(url=args.rabbitmq_url,
-                     neutron_exchange=args.neutron_exchange,
-                     neutron_queue=args.neutron_queue,
-                     neutron_routing_key=args.neutron_routing_key,
-                     nova_exchange=args.nova_exchange,
-                     nova_queue=args.nova_queue,
-                     nova_routing_key=args.nova_routing_key,
-                     min_timestamp=args.min_timestamp,
-                     callback=callback)
+    notifier = OpenstackNotifier(
+        url=args.rabbitmq_url,
+        neutron_exchange=args.neutron_exchange,
+        neutron_queue=args.neutron_queue,
+        neutron_routing_key=args.neutron_routing_key,
+        nova_exchange=args.nova_exchange,
+        nova_queue=args.nova_queue,
+        nova_routing_key=args.nova_routing_key,
+        min_timestamp=args.min_timestamp,
+        callback=callback)
 
     log.info('start monitoring')
-    m.start()
+    notifier.start()
     while True:
         try:
             time.sleep(1)
         except KeyboardInterrupt:
             break
     log.info('stop monitoring')
-    m.stop()
+    notifier.stop()

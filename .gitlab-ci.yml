@@ -25,8 +25,8 @@ test:
     -   ip route add $dest via $gw
     -   echo ip route add $dest via $gw
     -   pip install .
-    -   flake8 openstack_events tests
-    -   mypy --strict openstack_events
+    -   flake8 openstack_notifier tests
+    -   mypy --strict openstack_notifier
     #-   mkdir -p /root/.config/openstack
     #-   echo "$clouds_yaml_ci_infra" > /root/.config/openstack/clouds.yaml
-    -   python -m pytest --log-level debug --cov openstack_events tests/
+    -   python -m pytest --log-level debug --cov openstack_notifier tests/
