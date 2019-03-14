@@ -1,5 +1,6 @@
 from .stoppable_thread import StoppableThread
-from typing import Optional, Dict, Any, Callable, Set
+from typing import Optional, Dict, Any, Callable
+from dataclasses import dataclass
 import time
 import logging
 import kombu  # type: ignore
@@ -8,25 +9,25 @@ import socket
 log = logging.getLogger(__name__)
 
 
-OpenstackManagerCallback = Optional[Callable[[Set[str]], None]]
+@dataclass
+class CallbackData:
+    event_type: str
+    payload: Dict[str, Any]
+
+
+EventManagerCallback = Optional[Callable[[CallbackData], None]]
 
 
 class EventManager(StoppableThread):
     def __init__(self,
                  url: str,
-                 on_port_set: OpenstackManagerCallback = None,
-                 on_port_del: OpenstackManagerCallback = None,
-                 on_network_set: OpenstackManagerCallback = None,
-                 on_network_del: OpenstackManagerCallback = None,
+                 callback: EventManagerCallback = None,
                  neutron_exchange: str = "neutron",
                  neutron_topic: str = "notifications.info",
                  min_timestamp: Optional[float] = None,
                  ):
         self.url: str = url
-        self.on_port_set = on_port_set
-        self.on_port_del = on_port_del
-        self.on_network_set = on_network_set
-        self.on_network_del = on_network_del
+        self.callback = callback
         if min_timestamp is None:
             self.min_timestamp = time.mktime(time.gmtime())
         else:
@@ -41,6 +42,7 @@ class EventManager(StoppableThread):
 
     def rabbitmq_callback(self, body: Dict[str, Any], message: str) -> None:
         try:
+            log.debug('received message: %s' % body)
             event_type = body.get('event_type', None)
             event_ts_s = body.get('timestamp', None)
             if event_type is None:
@@ -55,29 +57,12 @@ class EventManager(StoppableThread):
                 log.debug('old message, skipping: %s'
                           % body)
                 return
-            if event_type == 'port.delete.end':
-                port_id = body['payload']['port']['id']
-                if self.on_port_del is not None:
-                    self.on_port_del({port_id})
-            elif event_type == 'port.create.end' or \
-                    event_type == 'port.update.end':
-                port_id = body['payload']['port']['id']
-                if self.on_port_set is not None:
-                    self.on_port_set({port_id})
-            elif event_type == 'network.delete.end':
-                network_id = body['payload']['network']['id']
-                if self.on_network_del is not None:
-                    self.on_network_del({network_id})
-            elif event_type == 'network.create.end' or \
-                    event_type == 'network.update.end':
-                network_id = body['payload']['network']['id']
-                if self.on_network_set is not None:
-                    self.on_network_set({network_id})
-            elif event_type is not None:
-                log.debug('skipping message event_type: %s, body: %s' %
-                          (event_type, body))
-            else:
-                log.debug('unknown event: %s' % body)
+
+            if self.callback is not None:
+                payload = body.get('payload', {})
+                callback_data = CallbackData(event_type=event_type,
+                                             payload=payload)
+                self.callback(callback_data)
         except Exception:
             log.exception('Error while parsing message %s' % body)
 
