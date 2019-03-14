@@ -1,4 +1,4 @@
-from .stoppable_thread import StoppableThread
+from threading import Thread, Event
 from typing import Optional, Dict, Any, Callable
 from dataclasses import dataclass
 import time
@@ -19,7 +19,7 @@ class CallbackData:
 EventManagerCallback = Optional[Callable[[CallbackData], None]]
 
 
-class OpenstackNotifier(StoppableThread):
+class OpenstackNotifier():
     def __init__(self,
                  url: str,
                  callback: EventManagerCallback = None,
@@ -51,6 +51,9 @@ class OpenstackNotifier(StoppableThread):
             hearthbeat=1)
         self.rabbitmq.ensure_connection(max_retries=3)
 
+        self.thread: Optional[Thread] = None
+        self.quit_event = Event()
+
     def rabbitmq_callback(self, body: Dict[str, Any], message: str) -> None:
         try:
             log.debug('received message: %s' % body)
@@ -79,6 +82,12 @@ class OpenstackNotifier(StoppableThread):
                 self.callback(callback_data)
         except Exception:
             log.exception('Error while parsing message %s' % body)
+
+    def start(self) -> None:
+        if self.thread is not None and self.thread.isAlive():
+            return
+        self.thread = Thread(target=self.run)
+        self.thread.start()
 
     def run(self) -> None:
         try:
@@ -119,6 +128,12 @@ class OpenstackNotifier(StoppableThread):
         finally:
             self.rabbitmq.release()
 
+    def alive(self) -> bool:
+        return self.thread is not None and self.thread.isAlive()
+
     def stop(self) -> None:
-        super().stop()
-        self.join()
+        self.quit_event.set()
+        if self.thread is not None and self.thread.isAlive():
+            self.thread.join()
+        self.thread = None
+        self.quit_event.clear()

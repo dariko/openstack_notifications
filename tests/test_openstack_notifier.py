@@ -75,6 +75,7 @@ def test_generated_notifications(openstack_notifier_builder,
                                     callback=callback)
     om.start()
     sleep(1)
+    assert om.alive()
 
     log.info('create network')
     rabbitmq_container.network_create('0000000000')
