@@ -99,7 +99,7 @@ class RabbitMQContainer:
 
     def network_create(self, network_id):
         self.publish(
-            {'event_type': 'network.update.end',
+            {'event_type': 'network.create.end',
              'payload': {'network': {'id': network_id}}},
             'neutron', 'notifications.neutron', 'notifications.neutron')
 
