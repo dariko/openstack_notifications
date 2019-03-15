@@ -2,7 +2,7 @@
 
 ## installation
 
-This module is compatible with `python >= 3.6`.     
+This module is tested using python `2.7`, `3.6` and `3.7`
 It can be installed using pip:
 
 `````
@@ -99,8 +99,8 @@ accessible to the current user.
 
 A virtualenv can be created to separate this project libraries:
 `````
-# create a virtualenv (python >= 3.6 is required)
-virtualenv -p /usr/local/bin/python3.7 venv
+# create a virtualenv
+virtualenv venv
 . venv/bin/activate
 # install library and testing requirements
 pip install -r requirements.txt
