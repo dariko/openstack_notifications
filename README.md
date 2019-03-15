@@ -91,3 +91,33 @@ INFO:openstack_notifier.tool:<CallbackData(router.delete.start, {'router_id': '8
 
 Usage examples can be found in [tool.py](openstack_notifier/tool.py) and
 in the [tests](tests/).
+
+# testing
+
+Running the tests locally requires docker to be installed, configured and
+accessible to the current user.
+
+A virtualenv can be created to separate this project libraries:
+`````
+# create a virtualenv (python >= 3.6 is required)
+virtualenv -p /usr/local/bin/python3.7 venv
+. venv/bin/activate
+# install library and testing requirements
+pip install -r requirements.txt
+pip install -r requirements-test.txt
+`````
+
+The tests can be run with this command:
+````
+python -m pytest
+````
+
+Some tests will be run only if the `--rabbitmq_url` and `--os-cloud` parameters
+are set, and are not run by CI. These test will create/delete a network, a port and
+a security group and verify the callback calls for each of these operations:
+`````
+python -m pytest \
+    --log-cli-level info \
+    --rabbitmq_url 'amqp://<USERNAME>:<PASSWORD>@<HOST1>;amqp://<USERNAME>:<PASSWORD>@<HOSTN>' \
+    --os_cloud '<CLOUD_NAME_IN_CLOUDS_YAML>'
+`````
