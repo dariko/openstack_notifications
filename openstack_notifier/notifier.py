@@ -1,6 +1,5 @@
 from threading import Thread, Event
 from typing import Optional, Dict, Any, Callable
-from dataclasses import dataclass
 import time
 import logging
 import json
@@ -10,10 +9,20 @@ import socket
 log = logging.getLogger(__name__)
 
 
-@dataclass
 class CallbackData:
-    event_type: str
-    payload: Dict[str, Any]
+    def __init__(self, event_type: str, payload: Dict[str, Any]):
+        self.event_type = event_type
+        self.payload = payload
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CallbackData):
+            return False
+        return self.event_type == other.event_type \
+            and self.payload == other.payload
+
+    def __repr__(self) -> str:
+        return "<CallbackData({0}, {1})".format(self.event_type,
+                                                self.payload)
 
 
 EventManagerCallback = Optional[Callable[[CallbackData], None]]
