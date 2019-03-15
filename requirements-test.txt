@@ -3,5 +3,5 @@ docker
 pytest_timeout
 pytest-cov
 pytest-mock
-mypy
+mypy; python_version >= '3.4'
 openstacksdk==0.24.0
