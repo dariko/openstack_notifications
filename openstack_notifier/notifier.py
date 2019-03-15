@@ -10,17 +10,22 @@ log = logging.getLogger(__name__)
 
 
 class CallbackData:
-    def __init__(self, event_type: str, payload: Dict[str, Any]):
+    def __init__(self,
+                 event_type,         # type: str
+                 payload             # type: Dict[str, Any]
+                 ):
         self.event_type = event_type
         self.payload = payload
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self,
+               other,  # type: object
+               ):  # type: (...) -> bool
         if not isinstance(other, CallbackData):
             return False
         return self.event_type == other.event_type \
             and self.payload == other.payload
 
-    def __repr__(self) -> str:
+    def __repr__(self):  # type: (...) -> str
         return "<CallbackData({0}, {1})".format(self.event_type,
                                                 self.payload)
 
@@ -28,19 +33,19 @@ class CallbackData:
 OpenstackNotifierCallback = Optional[Callable[[CallbackData], None]]
 
 
-class OpenstackNotifier():
+class OpenstackNotifier(object):
     def __init__(self,
-                 url: str,
-                 callback: OpenstackNotifierCallback = None,
-                 neutron_exchange: str = "neutron",
-                 neutron_queue: str = "notifications.neutron",
-                 neutron_routing_key: str = "notifications.info",
-                 nova_exchange: str = "nova",
-                 nova_queue: str = "notifications.info",
-                 nova_routing_key: str = "notifications.info",
-                 min_timestamp: Optional[float] = None,
+                 url,                   # type: str
+                 callback=None,       # type: OpenstackNotifierCallback
+                 neutron_exchange="neutron",                # type: str
+                 neutron_queue="notifications.neutron",     # type: str
+                 neutron_routing_key="notifications.info",  # type: str
+                 nova_exchange="nova",                      # type: str
+                 nova_queue="notifications.info",           # type: str
+                 nova_routing_key="notifications.info",     # type: str
+                 min_timestamp=None,  # type: Optional[float]
                  ):
-        self.url: str = url
+        self.url = url
         self.callback = callback
         if min_timestamp is None:
             self.min_timestamp = time.mktime(time.gmtime())
@@ -52,7 +57,7 @@ class OpenstackNotifier():
         self.nova_exchange = nova_exchange
         self.nova_queue = nova_queue
         self.nova_routing_key = nova_routing_key
-        super().__init__()
+        super(OpenstackNotifier, self).__init__()
 
         self.rabbitmq = kombu.Connection(
             self.url, failover_strategy='round-robin',
@@ -60,10 +65,13 @@ class OpenstackNotifier():
             hearthbeat=1)
         self.rabbitmq.ensure_connection(max_retries=3)
 
-        self.thread: Optional[Thread] = None
+        self.thread = None  # type: Optional[Thread]
         self.quit_event = Event()
 
-    def rabbitmq_callback(self, body: Dict[str, Any], message: str) -> None:
+    def rabbitmq_callback(self,
+                          body,  # type: Dict[str, Any]
+                          message  # type: str
+                          ):  # type: (...) -> None
         try:
             log.debug('received message: %s' % body)
             if "oslo.message" in body:
@@ -92,13 +100,13 @@ class OpenstackNotifier():
         except Exception:
             log.exception('Error while parsing message %s' % body)
 
-    def start(self) -> None:
+    def start(self):  # type: () -> None
         if self.thread is not None and self.thread.isAlive():
             return
         self.thread = Thread(target=self.run)
         self.thread.start()
 
-    def run(self) -> None:
+    def run(self):  # type: () -> None
         try:
             log.debug('start listening to exchange neutron,'
                       'queue notifications.neutron, %s' %
@@ -137,10 +145,10 @@ class OpenstackNotifier():
         finally:
             self.rabbitmq.release()
 
-    def alive(self) -> bool:
+    def alive(self):  # type: () -> bool
         return self.thread is not None and self.thread.isAlive()
 
-    def stop(self) -> None:
+    def stop(self):  # type: () -> None
         self.quit_event.set()
         if self.thread is not None and self.thread.isAlive():
             self.thread.join()

@@ -7,7 +7,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def openstack_notifier_tool() -> None:
+def openstack_notifier_tool():  # type: () -> None
     parser = ArgumentParser()
     parser.description = 'openstack notifications monitor'
     parser.add_argument('--neutron_exchange', default='neutron')
@@ -27,7 +27,7 @@ def openstack_notifier_tool() -> None:
     else:
         logging.basicConfig(level=logging.INFO)
 
-    def callback(data: CallbackData) -> None:
+    def callback(data):  # type: (CallbackData) -> None
         log.info('%s' % data)
 
     notifier = OpenstackNotifier(
