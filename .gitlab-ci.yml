@@ -10,9 +10,8 @@ variables:
     https_proxy: $http_proxy
     OS_CLOUD: default
 
-test:
+.test: &test
     stage: test
-    image: python:3.7-slim
     services:
     -   name: docker:dind
     script:
@@ -27,6 +26,12 @@ test:
     -   pip install .
     -   flake8 openstack_notifier tests
     -   mypy --strict openstack_notifier
-    #-   mkdir -p /root/.config/openstack
-    #-   echo "$clouds_yaml_ci_infra" > /root/.config/openstack/clouds.yaml
     -   python -m pytest --log-level debug --cov openstack_notifier tests/
+
+py37:
+  <<: [*test]
+  image: python:3.7-slim
+
+py36:
+  <<: [*test]
+  image: python:3.6-slim
