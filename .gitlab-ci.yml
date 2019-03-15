@@ -28,6 +28,10 @@ variables:
     -   which mypy && mypy --strict openstack_notifier || true
     -   python -m pytest --log-level debug --cov openstack_notifier tests/
 
+py27:
+  <<: [*test]
+  image: python:2.7-slim
+
 py37:
   <<: [*test]
   image: python:3.7-slim
