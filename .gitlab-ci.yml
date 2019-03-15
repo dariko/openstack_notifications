@@ -32,10 +32,14 @@ py27:
   <<: [*test]
   image: python:2.7-slim
 
-py37:
+py35:
   <<: [*test]
-  image: python:3.7-slim
+  image: python:3.5-slim
 
 py36:
   <<: [*test]
   image: python:3.6-slim
+
+py37:
+  <<: [*test]
+  image: python:3.7-slim
