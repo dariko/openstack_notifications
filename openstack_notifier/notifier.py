@@ -25,13 +25,13 @@ class CallbackData:
                                                 self.payload)
 
 
-EventManagerCallback = Optional[Callable[[CallbackData], None]]
+OpenstackNotifierCallback = Optional[Callable[[CallbackData], None]]
 
 
 class OpenstackNotifier():
     def __init__(self,
                  url: str,
-                 callback: EventManagerCallback = None,
+                 callback: OpenstackNotifierCallback = None,
                  neutron_exchange: str = "neutron",
                  neutron_queue: str = "notifications.neutron",
                  neutron_routing_key: str = "notifications.info",
