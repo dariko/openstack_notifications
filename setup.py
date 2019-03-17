@@ -10,4 +10,5 @@ setup(name='openstack_notifier',
         'console_scripts': [
             'openstack_notifier = openstack_notifier.tool:openstack_notifier_tool',
         ]},
+      package_data={"openstack_notifier": ["py.typed"]},
       )
