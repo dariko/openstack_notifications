@@ -95,7 +95,7 @@ class OpenstackNotifier(object):
                 payload = body.get('payload', {})
                 callback_data = CallbackData(event_type=event_type,
                                              payload=payload)
-                log.debug('calling callback (callback_data)')
+                log.debug('calling callback (%s)' % callback_data)
                 self.callback(callback_data)
         except Exception:
             log.exception('Error while parsing message %s' % body)
