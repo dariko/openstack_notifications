@@ -1,13 +1,14 @@
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from .notifier import OpenstackNotifier
 from .notifier import CallbackData
+from typing import List
 import time
 import logging
 
 log = logging.getLogger(__name__)
 
 
-def openstack_notifier_tool():  # type: () -> None
+def parse_args(args):  # type: (List[str]) -> Namespace
     parser = ArgumentParser()
     parser.description = 'openstack notifications monitor'
     parser.add_argument('--neutron_exchange', default='neutron')
@@ -19,8 +20,11 @@ def openstack_notifier_tool():  # type: () -> None
     parser.add_argument('--min_timestamp', default=time.mktime(time.gmtime()))
     parser.add_argument('--debug', action='store_true', default=False)
     parser.add_argument('--rabbitmq_url', required=True)
+    return parser.parse_args(args)
 
-    args = parser.parse_args()
+
+def openstack_notifier_tool(sys_args=[]):  # type: (List[str]) -> None
+    args = parse_args(sys_args)
 
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
