@@ -1,5 +1,5 @@
 from argparse import ArgumentParser, Namespace
-from .notifier import OpenstackNotifier
+from .notifier import OpenstackNotifier, QueueConfig
 from .notifier import CallbackData
 from typing import List
 import time
@@ -11,16 +11,22 @@ log = logging.getLogger(__name__)
 def parse_args(args):  # type: (List[str]) -> Namespace
     parser = ArgumentParser()
     parser.description = 'openstack notifications monitor'
-    parser.add_argument('--neutron_exchange', default='neutron')
-    parser.add_argument('--neutron_queue', default='notifications.info')
-    parser.add_argument('--neutron_routing_key', default='*')
-    parser.add_argument('--nova_exchange', default='nova')
-    parser.add_argument('--nova_queue', default='notifications.info')
-    parser.add_argument('--nova_routing_key', default='*')
+    parser.add_argument('--queue_config', action='append', default=[],
+                        help='ex: "--queue_config neutron:notifications.info:*'
+                        '--queue_config nova:notifications.info:*"')
+
     parser.add_argument('--min_timestamp', default=time.mktime(time.gmtime()))
     parser.add_argument('--debug', action='store_true', default=False)
     parser.add_argument('--rabbitmq_url', required=True)
-    return parser.parse_args(args)
+    parsed_args = parser.parse_args(args)
+
+    queue_configs = []
+    for s in parsed_args.queue_config:
+        parts = s.split(':')
+        queue_configs.append(QueueConfig(parts[0], parts[1], parts[2]))
+    parsed_args.queue_config = queue_configs
+
+    return parsed_args
 
 
 def openstack_notifier_tool(sys_args=[]):  # type: (List[str]) -> None
@@ -36,12 +42,7 @@ def openstack_notifier_tool(sys_args=[]):  # type: (List[str]) -> None
 
     notifier = OpenstackNotifier(
         url=args.rabbitmq_url,
-        neutron_exchange=args.neutron_exchange,
-        neutron_queue=args.neutron_queue,
-        neutron_routing_key=args.neutron_routing_key,
-        nova_exchange=args.nova_exchange,
-        nova_queue=args.nova_queue,
-        nova_routing_key=args.nova_routing_key,
+        queue_configs=args.queue_config,
         min_timestamp=args.min_timestamp,
         callback=callback)
 

@@ -1,5 +1,5 @@
 from threading import Thread, Event
-from typing import Optional, Dict, Any, Callable
+from typing import Optional, Dict, Any, Callable, List
 import time
 import logging
 import json
@@ -30,19 +30,36 @@ class CallbackData:
                                                 self.payload)
 
 
+class QueueConfig:
+    def __init__(self,
+                 exchange,     # type: str
+                 queue,        # type: str
+                 routing_key,  # type: str
+                 ):
+        self.exchange = exchange
+        self.queue = queue
+        self.routing_key = routing_key
+
+    def __repr__(self):  # type: () -> str
+        return("QueueConfig<exchange=%s queue=%s routing_key=%s>" %
+               (self.exchange, self.queue, self.routing_key))
+
+    def __eq__(self, other):  # type: (Any) -> bool
+        if not isinstance(other, QueueConfig):
+            return False
+        return self.exchange == other.exchange \
+            and self.queue == other.queue \
+            and self.routing_key == other.routing_key
+
+
 OpenstackNotifierCallback = Optional[Callable[[CallbackData], None]]
 
 
 class OpenstackNotifier(object):
     def __init__(self,
                  url,                   # type: str
-                 callback=None,       # type: OpenstackNotifierCallback
-                 neutron_exchange="neutron",                # type: str
-                 neutron_queue="notifications.neutron",     # type: str
-                 neutron_routing_key="notifications.info",  # type: str
-                 nova_exchange="nova",                      # type: str
-                 nova_queue="notifications.info",           # type: str
-                 nova_routing_key="notifications.info",     # type: str
+                 callback=None,         # type: OpenstackNotifierCallback
+                 queue_configs=None,    # type: Optional[List[QueueConfig]]
                  min_timestamp=None,  # type: Optional[float]
                  ):
         self.url = url
@@ -51,12 +68,17 @@ class OpenstackNotifier(object):
             self.min_timestamp = time.mktime(time.gmtime())
         else:
             self.min_timestamp = min_timestamp
-        self.neutron_exchange = neutron_exchange
-        self.neutron_queue = neutron_queue
-        self.neutron_routing_key = neutron_routing_key
-        self.nova_exchange = nova_exchange
-        self.nova_queue = nova_queue
-        self.nova_routing_key = nova_routing_key
+        if queue_configs is None:
+            self.queue_configs = [
+                QueueConfig(exchange='neutron',
+                            queue='notifications.neutron',
+                            routing_key='notifications.info'),
+                QueueConfig(exchange='nova',
+                            queue='notifications.info',
+                            routing_key='notifications.info'),
+                ]
+        else:
+            self.queue_configs = queue_configs
         super(OpenstackNotifier, self).__init__()
 
         self.rabbitmq = kombu.Connection(
@@ -108,41 +130,39 @@ class OpenstackNotifier(object):
 
     def run(self):  # type: () -> None
         try:
-            log.debug('start listening to exchange neutron,'
-                      'queue notifications.neutron, %s' %
-                      self.url)
-            neutron_ex = kombu.Exchange(self.neutron_exchange,
-                                        type='topic', durable=False)
-            neutron_q = kombu.Queue(self.neutron_queue,
-                                    exchange=neutron_ex,
-                                    routing_key=self.neutron_routing_key,
-                                    durable=False)
-            nova_ex = kombu.Exchange(self.nova_exchange,
-                                     type='topic', durable=False)
-            nova_q = kombu.Queue(self.nova_queue,
-                                 exchange=nova_ex,
-                                 routing_key=self.nova_routing_key,
-                                 durable=False)
-            self.minimum_timestamp = time.mktime(time.gmtime())
+            channel = None
+            consumer = None
+            log.debug('start listening for notifications on queues %s' %
+                      self.queue_configs)
 
-            with self.rabbitmq.channel() as neutron_c, \
-                    self.rabbitmq.channel() as nova_c:
-                with kombu.utils.compat.nested(
-                        kombu.Consumer(neutron_c, neutron_q,
-                                       callbacks=[self.rabbitmq_callback]),
-                        kombu.Consumer(nova_c, nova_q,
-                                       callbacks=[self.rabbitmq_callback])):
-                    while not self.quit_event.is_set():
-                        while not self.quit_event.wait(timeout=1):
-                            try:
-                                while not self.quit_event.is_set():
-                                    self.rabbitmq.drain_events(timeout=1)
-                            except socket.timeout:
-                                self.rabbitmq.heartbeat_check()
+            channel = self.rabbitmq.channel()
+            consumer = kombu.Consumer(channel,
+                                      callbacks=[self.rabbitmq_callback])
+
+            for q in self.queue_configs:
+                exchange = kombu.Exchange(q.exchange,
+                                          type='topic',
+                                          durable=False)
+                q = kombu.Queue(q.queue, exchange=exchange,
+                                routing_key=q.routing_key, durable=False)
+                consumer.add_queue(q)
+
+            consumer.consume()
+            while not self.quit_event.is_set():
+                while not self.quit_event.wait(timeout=1):
+                    try:
+                        while not self.quit_event.is_set():
+                            self.rabbitmq.drain_events(timeout=1)
+                    except socket.timeout:
+                        self.rabbitmq.heartbeat_check()
 
         except Exception as e:
             log.exception('error in OpenstackManager: %s' % e)
         finally:
+            if consumer is not None:
+                consumer.cancel()
+            if channel is not None:
+                channel.close()
             self.rabbitmq.release()
 
     def alive(self):  # type: () -> bool
