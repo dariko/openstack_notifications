@@ -1,4 +1,4 @@
-from time import sleep
+from time import sleep, mktime, gmtime
 from openstack_notifier.notifier import CallbackData
 import pytest
 import logging
@@ -159,7 +159,44 @@ def test_generated_notifications(openstack_notifier_builder,
                      {'security_group': {'id': '0000000000'}}))
     callback.reset_mock()
 
+    log.info('restart notifier')
+    om.stop()
+    while om.alive():
+        log.info('wait for notifier to stop')
+        sleep(0.5)
+    om.start()
+    sleep(1)
+    callback.reset_mock()
+
     log.info('delete security_group')
+    rabbitmq_container.security_group_delete('0000000000')
+    while not callback.called:
+        log.info('waiting for callback')
+        sleep(0.5)
+    callback.assert_called_with(
+        CallbackData('security_group.delete.end',
+                     {'security_group': {'id': '0000000000'}}))
+    om.stop()
+    while om.alive():
+        log.info('wait for notifier to stop')
+        sleep(0.5)
+    callback.reset_mock()
+
+    log.info('notifier with future min_timestamp')
+    min_ts = mktime(gmtime())+2
+    om = openstack_notifier_builder(url=rabbitmq_container.url(),
+                                    callback=callback,
+                                    min_timestamp=min_ts)
+    om.start()
+    sleep(1)
+    callback.reset_mock()
+
+    log.info('delete security_group (before min_timestamp)')
+    rabbitmq_container.security_group_delete('0000000000')
+    sleep(2)
+    assert not callback.called
+
+    log.info('delete security_group (after min_timestamp)')
     rabbitmq_container.security_group_delete('0000000000')
     while not callback.called:
         log.info('waiting for callback')
@@ -168,6 +205,4 @@ def test_generated_notifications(openstack_notifier_builder,
     callback.assert_called_with(
         CallbackData('security_group.delete.end',
                      {'security_group': {'id': '0000000000'}}))
-    callback.reset_mock()
-
     om.stop()
