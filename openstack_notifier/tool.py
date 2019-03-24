@@ -29,8 +29,9 @@ def parse_args(args):  # type: (List[str]) -> Namespace
     return parsed_args
 
 
-def openstack_notifier_tool(sys_args=[]):  # type: (List[str]) -> None
-    args = parse_args(sys_args)
+def openstack_notifier_tool():  # type: () -> None
+    import sys
+    args = parse_args(sys.argv[1:])
 
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
