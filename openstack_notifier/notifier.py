@@ -81,12 +81,6 @@ class OpenstackNotifier(object):
             self.queue_configs = queue_configs
         super(OpenstackNotifier, self).__init__()
 
-        self.rabbitmq = kombu.Connection(
-            self.url, failover_strategy='round-robin',
-            connect_timeout=2,
-            hearthbeat=1)
-        self.rabbitmq.ensure_connection(max_retries=3)
-
         self.thread = None  # type: Optional[Thread]
         self.quit_event = Event()
 
@@ -130,12 +124,17 @@ class OpenstackNotifier(object):
 
     def run(self):  # type: () -> None
         try:
+            rabbitmq = None
             channel = None
             consumer = None
+            rabbitmq = kombu.Connection(
+                self.url, failover_strategy='round-robin',
+                connect_timeout=2, hearthbeat=1)
+            rabbitmq.ensure_connection(max_retries=3)
             log.debug('start listening for notifications on queues %s' %
                       self.queue_configs)
 
-            channel = self.rabbitmq.channel()
+            channel = rabbitmq.channel()
             consumer = kombu.Consumer(channel,
                                       callbacks=[self.rabbitmq_callback])
 
@@ -152,10 +151,9 @@ class OpenstackNotifier(object):
                 while not self.quit_event.wait(timeout=1):
                     try:
                         while not self.quit_event.is_set():
-                            self.rabbitmq.drain_events(timeout=1)
+                            rabbitmq.drain_events(timeout=1)
                     except socket.timeout:
-                        self.rabbitmq.heartbeat_check()
-
+                        rabbitmq.heartbeat_check()
         except Exception as e:
             log.exception('error in OpenstackManager: %s' % e)
         finally:
@@ -163,7 +161,8 @@ class OpenstackNotifier(object):
                 consumer.cancel()
             if channel is not None:
                 channel.close()
-            self.rabbitmq.release()
+            if rabbitmq is not None:
+                rabbitmq.release()
 
     def alive(self):  # type: () -> bool
         return self.thread is not None and self.thread.isAlive()
