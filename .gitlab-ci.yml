@@ -1,6 +1,9 @@
 stages:
 -   test
 
+include:
+-   local: ".gitlab-ci.local.yml"
+
 variables:
     DOCKER_PUBLISH_HOST: docker
     DOCKER_HOST: tcp://docker:2375
@@ -10,10 +13,9 @@ variables:
     https_proxy: $http_proxy
     OS_CLOUD: default
 
-.test: &test
+.test:
     stage: test
-    services:
-    -   name: docker:dind
+    extends: .dind_job
     script:
     -   echo 'Acquire::http::Proxy "'$http_proxy'";' > /etc/apt/apt.conf.d/99proxy
     -   cat /etc/apt/apt.conf.d/99proxy
@@ -29,17 +31,17 @@ variables:
     -   python -m pytest --log-level debug --cov openstack_notifier tests/
 
 py27:
-  <<: [*test]
+  extends: .test
   image: python:2.7-slim
 
 py35:
-  <<: [*test]
+  extends: .test
   image: python:3.5-slim
 
 py36:
-  <<: [*test]
+  extends: .test
   image: python:3.6-slim
 
 py37:
-  <<: [*test]
+  extends: .test
   image: python:3.7-slim
