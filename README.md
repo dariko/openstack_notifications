@@ -18,22 +18,34 @@ The `OpenstackNotifier` class can be instantiated as:
 `````
 OpenstackNotifier(self,
                   url: str,
-                  callback: OpenstackNotifierCallback = None,
-                  neutron_exchange: str = "neutron",
-                  neutron_queue: str = "notifications.neutron",
-                  neutron_routing_key: str = "notifications.info",
-                  nova_exchange: str = "nova",
-                  nova_queue: str = "notifications.info",
-                  nova_routing_key: str = "notifications.info",
+                  callback=None,         # type: OpenstackNotifierCallback
+                  queue_configs=None,    # type: Optional[List[QueueConfig]]
                   min_timestamp: Optional[float] = None,
                   ):
 `````
 
 `url` is the rabbitmq url as described [here](http://docs.celeryproject.org/projects/kombu/en/latest/userguide/connections.html#urls) (kombu documentation).
 
-The `start()` and `stop()` methods can be used to start and stop the
-queue monitoring thread, and the `alive()` method will return `True` if
-the monitoring thread is alive.
+`min_timestamp`, if set, it will act as a notification filter.
+
+`queue_configs` is a list of
+`````
+QueueConfig(self,
+            exchange,     # type: str
+            queue,        # type: str
+            routing_key,  # type: str
+            ):
+`````
+which describes the rabbitmq topics that the notifier will listen to.
+Defaults to
+`````
+[QueueConfig(exchange='neutron',
+            queue='notifications.neutron',
+            routing_key='notifications.info'),
+ QueueConfig(exchange='nova',
+            queue='notifications.info',
+            routing_key='notifications.info')]
+`````
 
 `callback` will be called for every received notification with a
 CallbackData as parameter.
@@ -41,8 +53,9 @@ CallbackData as parameter.
 CallbackData(self, event_type: str, payload: Dict[str, Any]):
 `````
 
-If `min_timestamp` it will act as a notification filter.
-
+The `start()` and `stop()` methods can be used to start and stop the
+queue monitoring thread, and the `alive()` method will return `True` if
+the monitoring thread is alive.
 
 
 ## command line tool
