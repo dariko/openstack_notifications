@@ -103,8 +103,8 @@ class OpenstackNotifier(object):
             event_ts = time.mktime(time.strptime(
                 event_ts_s, '%Y-%m-%d %H:%M:%S.%f'))
             if self.min_timestamp > event_ts:
-                log.debug('old message, skipping: %s'
-                          % body)
+                log.debug('old message, skipping: %s, min_timestamp: %s'
+                          % (body, self.min_timestamp))
                 return
 
             if self.callback is not None:
