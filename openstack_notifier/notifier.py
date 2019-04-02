@@ -67,7 +67,7 @@ class OpenstackNotifier(object):
         if min_timestamp is None:
             self.min_timestamp = 0
         else:
-            self.min_timestamp = min_timestamp
+            self.min_timestamp = int(min_timestamp)
         if queue_configs is None:
             self.queue_configs = [
                 QueueConfig(exchange='neutron',
