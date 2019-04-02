@@ -65,7 +65,7 @@ class OpenstackNotifier(object):
         self.url = url
         self.callback = callback
         if min_timestamp is None:
-            self.min_timestamp = time.mktime(time.gmtime())
+            self.min_timestamp = 0
         else:
             self.min_timestamp = min_timestamp
         if queue_configs is None:
