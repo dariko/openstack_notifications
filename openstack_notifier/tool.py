@@ -15,7 +15,7 @@ def parse_args(args):  # type: (List[str]) -> Namespace
                         help='ex: "--queue_config neutron:notifications.info:*'
                         '--queue_config nova:notifications.info:*"')
 
-    parser.add_argument('--min_timestamp', default=time.mktime(time.gmtime()))
+    parser.add_argument('--min_timestamp', default=0)
     parser.add_argument('--debug', action='store_true', default=False)
     parser.add_argument('--rabbitmq_url', required=True)
     parsed_args = parser.parse_args(args)
