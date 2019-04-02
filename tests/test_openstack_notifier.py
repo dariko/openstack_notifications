@@ -1,4 +1,4 @@
-from time import sleep, mktime, time
+from time import sleep, time
 from openstack_notifier.notifier import CallbackData
 import pytest
 import logging
