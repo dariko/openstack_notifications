@@ -143,7 +143,8 @@ class OpenstackNotifier(object):
                                           type='topic',
                                           durable=False)
                 q = kombu.Queue(q.queue, exchange=exchange,
-                                routing_key=q.routing_key, durable=False)
+                                routing_key=q.routing_key, durable=False,
+                                no_ack=True)
                 consumer.add_queue(q)
 
             consumer.consume()
