@@ -136,7 +136,8 @@ class OpenstackNotifier(object):
 
             channel = rabbitmq.channel()
             consumer = kombu.Consumer(channel,
-                                      callbacks=[self.rabbitmq_callback])
+                                      callbacks=[self.rabbitmq_callback],
+                                      no_ack=True)
 
             for q in self.queue_configs:
                 exchange = kombu.Exchange(q.exchange,
@@ -147,7 +148,7 @@ class OpenstackNotifier(object):
                                 no_ack=True)
                 consumer.add_queue(q)
 
-            consumer.consume()
+            consumer.consume(no_ack=True)
             while not self.quit_event.is_set():
                 while not self.quit_event.wait(timeout=1):
                     try:
