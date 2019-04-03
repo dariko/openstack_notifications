@@ -75,10 +75,10 @@ class OpenstackNotifier(object):
         if queue_configs is None:
             self.queue_configs = [
                 QueueConfig(exchange='neutron',
-                            queue='notifications.neutron',
+                            queue='',
                             routing_key='notifications.info'),
                 QueueConfig(exchange='nova',
-                            queue='notifications.info',
+                            queue='',
                             routing_key='notifications.info'),
                 ]
         else:
