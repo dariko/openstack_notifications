@@ -4,6 +4,7 @@ import time
 import logging
 import json
 import kombu  # type: ignore
+from uuid import uuid4
 import socket
 
 log = logging.getLogger(__name__)
@@ -32,12 +33,15 @@ class CallbackData:
 
 class QueueConfig:
     def __init__(self,
-                 exchange,     # type: str
-                 queue,        # type: str
-                 routing_key,  # type: str
+                 exchange,            # type: str
+                 queue="",          # type: str
+                 routing_key="*",   # type: str
                  ):
         self.exchange = exchange
-        self.queue = queue
+        if queue == "":
+            self.queue = "openstack_notifier-%s" % uuid4()
+        else:
+            self.queue = queue
         self.routing_key = routing_key
 
     def __repr__(self):  # type: () -> str
