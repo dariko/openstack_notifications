@@ -135,8 +135,8 @@ class OpenstackNotifier(object):
                 self.url, failover_strategy='round-robin',
                 connect_timeout=2, hearthbeat=1)
             rabbitmq.ensure_connection(max_retries=3)
-            log.debug('start listening for notifications on queues %s' %
-                      self.queue_configs)
+            log.info('start listening for notifications on queues %s' %
+                     self.queue_configs)
 
             channel = rabbitmq.channel()
             consumer = kombu.Consumer(channel,
