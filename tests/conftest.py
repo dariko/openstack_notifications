@@ -64,74 +64,71 @@ class RabbitMQContainer:
     def url(self):
         return "amqp://username:password@%s" % self.get_ip()
 
-    def publish(self, data, exchange, queue, routing_key, add_timestamp=True):
+    def publish(self, data, exchange, routing_key, add_timestamp=True):
         if add_timestamp:
             data['timestamp'] = time.strftime(
                 '%Y-%m-%d %H:%M:%S.000', time.gmtime())
 
         _exchange = kombu.Exchange(exchange, 'topic', durable=False)
-        _queue = kombu.Queue(queue, exchange=_exchange,
-                             routing_key=routing_key, durable=False)
         with kombu.Connection('amqp://username:password@%s' %
                               self.get_ip()) as conn:
             producer = conn.Producer(serializer='json')
             producer.publish(data, exchange=_exchange,
-                             routing_key=routing_key,
-                             declare=[_queue])
+                             routing_key=routing_key)
 
     def port_create(self, port_id):
         self.publish(
             {'event_type': 'port.create.end',
              'payload': {'port': {'id': port_id}}},
-            'neutron', 'notifications.neutron', 'notifications.neutron')
+            'neutron', 'notifications.info')
 
     def port_update(self, port_id):
         self.publish(
             {'event_type': 'port.update.end',
              'payload': {'port': {'id': port_id}}},
-            'neutron', 'notifications.neutron', 'notifications.neutron')
+            'neutron', 'notifications.info')
 
     def port_delete(self, port_id):
         self.publish(
             {'event_type': 'port.delete.end',
              'payload': {'port': {'id': port_id}}},
-            'neutron', 'notifications.neutron', 'notifications.neutron')
+            'neutron', 'notifications.info')
 
     def network_create(self, network_id):
         self.publish(
             {'event_type': 'network.create.end',
              'payload': {'network': {'id': network_id}}},
-            'neutron', 'notifications.neutron', 'notifications.neutron')
+            'neutron', 'notifications.info')
 
     def network_update(self, network_id):
         self.publish(
             {'event_type': 'network.update.end',
              'payload': {'network': {'id': network_id}}},
-            'neutron', 'notifications.neutron', 'notifications.neutron')
+            'neutron', 'notifications.info')
 
     def network_delete(self, network_id):
         self.publish(
             {'event_type': 'network.delete.end',
              'payload': {'network': {'id': network_id}}},
-            'neutron', 'notifications.neutron', 'notifications.neutron')
+            'neutron', 'notifications.info')
 
     def security_group_create(self, security_group_id):
         self.publish(
             {'event_type': 'security_group.create.end',
              'payload': {'security_group': {'id': security_group_id}}},
-            'nova', 'notifications.info', 'notifications.info')
+            'nova', 'notifications.info')
 
     def security_group_update(self, security_group_id):
         self.publish(
             {'event_type': 'security_group.update.end',
              'payload': {'security_group': {'id': security_group_id}}},
-            'nova', 'notifications.info', 'notifications.info')
+            'nova', 'notifications.info')
 
     def security_group_delete(self, security_group_id):
         self.publish(
             {'event_type': 'security_group.delete.end',
              'payload': {'security_group': {'id': security_group_id}}},
-            'nova', 'notifications.info', 'notifications.info')
+            'nova', 'notifications.info')
 
 
 @pytest.fixture
